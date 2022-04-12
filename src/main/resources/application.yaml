@@ -1,0 +1,16 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: order-service
+  datasource:
+    username: root
+    url: jdbc:mysql://localhost:3306/orders
+  jpa:
+    hibernate:
+      ddl-auto: update
+axon:
+  eventhandling:
+    processors:
+      orders-group:
+        mode: subscribing
