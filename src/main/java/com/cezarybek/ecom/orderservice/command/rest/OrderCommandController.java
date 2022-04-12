@@ -21,7 +21,7 @@ public class OrderCommandController {
 
     private final QueryGateway queryGateway;
     private final CommandGateway commandGateway;
-    private final static String userId = "123";
+    private final static String userId = "121";
 
     public OrderCommandController(QueryGateway queryGateway, CommandGateway commandGateway) {
         this.queryGateway = queryGateway;
@@ -29,42 +29,37 @@ public class OrderCommandController {
     }
 
     @PostMapping
-    public OrderEntity addProductToCart(@RequestBody Product product){
+    public void addProductToCart(@RequestBody Product product){
 
         UserOrderByStatusQuery query = new UserOrderByStatusQuery(userId, OrderStatus.CART.toString());
 
-        Optional<OrderEntity> findOrder = queryGateway.query(query, ResponseTypes.optionalInstanceOf(OrderEntity.class)).join();
+        Optional<OrderEntity> orderEntity = queryGateway.query(query, ResponseTypes.optionalInstanceOf(OrderEntity.class)).join();
 
-        OrderEntity orderEntity = null;
+        if(orderEntity.isPresent()){
+            addProductToOrder(orderEntity.get().getOrderId(), product);
 
-        if(findOrder.isPresent()){
-            AddProductToOrderCommand addProductToOrderCommand = AddProductToOrderCommand.builder()
-                    .orderId(findOrder.get().getOrderId())
-                    .product(product)
-                    .build();
-
-            OrderEntity orderUpdated = commandGateway.sendAndWait(addProductToOrderCommand);
-            orderEntity = orderUpdated;
         }else {
+            String orderId = UUID.randomUUID().toString();
             CreateOrderCommand createOrderCommand = CreateOrderCommand.builder()
-                    .orderId(UUID.randomUUID().toString())
+                    .orderId(orderId)
                     .userId(userId)
                     .orderStatus(OrderStatus.CART.toString())
                     .build();
 
-            OrderEntity orderCreated = commandGateway.sendAndWait(createOrderCommand);
+            commandGateway.sendAndWait(createOrderCommand);
 
-            AddProductToOrderCommand addProductToOrderCommand = AddProductToOrderCommand.builder()
-                    .orderId(orderCreated.getOrderId())
-                    .product(product)
-                    .build();
+            OrderEntity order = queryGateway.query(query, ResponseTypes.instanceOf(OrderEntity.class)).join();
 
-            OrderEntity orderUpdated = commandGateway.sendAndWait(addProductToOrderCommand);
-
-            orderEntity = orderUpdated;
-
+            addProductToOrder(order.getOrderId(), product);
         }
+    }
 
-        return orderEntity;
+    private void addProductToOrder(String orderId, Product product){
+        AddProductToOrderCommand addProductToOrderCommand = AddProductToOrderCommand.builder()
+                .orderId(orderId)
+                .product(product)
+                .build();
+
+        commandGateway.send(addProductToOrderCommand);
     }
 }
