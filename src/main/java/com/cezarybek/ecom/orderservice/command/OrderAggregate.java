@@ -54,6 +54,11 @@ public class OrderAggregate {
 
     @EventSourcingHandler
     public void on(ProductAddedToCartEvent event){
-        this.products.add(event.getProduct());
+        this.products.stream().map(p -> {
+            if(event.getProduct().getProductId().equals(p.getProductId())) {
+            p.setQuantity(p.getQuantity() + event.getProduct().getQuantity());
+        }
+            return p;
+        });
     }
 }
