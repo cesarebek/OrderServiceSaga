@@ -37,7 +37,6 @@ public class OrderCommandController {
 
         if(orderEntity.isPresent()){
             addProductToOrder(orderEntity.get().getOrderId(), product);
-
         }else {
             String orderId = UUID.randomUUID().toString();
             CreateOrderCommand createOrderCommand = CreateOrderCommand.builder()
@@ -48,9 +47,7 @@ public class OrderCommandController {
 
             commandGateway.sendAndWait(createOrderCommand);
 
-            OrderEntity order = queryGateway.query(query, ResponseTypes.instanceOf(OrderEntity.class)).join();
-
-            addProductToOrder(order.getOrderId(), product);
+            addProductToOrder(orderId, product);
         }
     }
 

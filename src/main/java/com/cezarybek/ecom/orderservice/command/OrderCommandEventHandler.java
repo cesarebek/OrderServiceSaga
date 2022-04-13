@@ -31,7 +31,17 @@ public class OrderCommandEventHandler {
     @EventHandler
     public void handle(ProductAddedToCartEvent event){
         OrderEntity orderEntity = orderRepository.getOrderEntityByOrderId(event.getOrderId());
-        orderEntity.getProducts().add(event.getProduct());
+
+        boolean productAlreadyInCart = orderEntity.getProducts().stream().anyMatch(p -> p.getProductId().equals(event.getProduct().getProductId()));
+
+        if(productAlreadyInCart){
+            orderEntity.getProducts().stream().peek(p-> {
+                if(p.getProductId().equals(event.getProduct().getProductId())){
+                  p.setQuantity(p.getQuantity() + event.getProduct().getQuantity());
+                }
+            });
+        }
+
         orderRepository.save(orderEntity);
     }
 }
